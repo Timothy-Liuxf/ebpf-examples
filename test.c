@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <sys/resource.h>
 #include <bpf/libbpf.h>
+#include <stdlib.h>
 #include "test.skel.h"
 
 static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args)
@@ -23,8 +24,14 @@ void sig_int(int signo)
     stop = 1;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
+    if (argc < 2)
+    {
+        fprintf(stderr, "Usage: %s <pid>\n", argv[0]);
+        return 1;
+    }
+
     struct test_bpf *skel;
     int err;
 
@@ -55,6 +62,15 @@ int main(int argc, char **argv)
 
     printf("Successfully started! Please run `sudo cat /sys/kernel/debug/tracing/trace_pipe` "
            "to see output of the BPF programs.\n");
+
+    int filter_pid = atoi(argv[1]);
+    unsigned int index = 0;
+    err = bpf_map__update_elem(skel->maps.my_pid_map, &index, sizeof(index), &filter_pid, sizeof(filter_pid), 0);
+    if (err < 0)
+    {
+        fprintf(stderr, "Failed to update my_pid_map: %d\n", err);
+        goto cleanup;
+    }
 
     while (!stop)
     {
