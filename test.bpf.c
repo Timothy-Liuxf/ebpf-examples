@@ -17,13 +17,12 @@ SEC("kprobe/__x64_sys_getpid")
 int BPF_KPROBE(do_sys_getpid)
 {
     u32 index = 0;
-    pid_t *my_pid = bpf_map_lookup_elem(&my_pid_map, &index);
+    pid_t *monitoring_pid_ptr = bpf_map_lookup_elem(&my_pid_map, &index);
+    pid_t m_pid = monitoring_pid_ptr ? *monitoring_pid_ptr : -1;
     pid_t pid = (pid_t)(bpf_get_current_pid_tgid() >> 32);
 
-    if (my_pid != NULL && *my_pid == pid)
-    {
-        const char fmt[] = "do_sys_getpid called: pid: %d";
-        bpf_trace_printk(fmt, sizeof(fmt), pid);
-    }
+    const char fmt[] = "do_sys_getpid called: pid: %d, m_pid: %d\n";
+    bpf_trace_printk(fmt, sizeof(fmt), pid, m_pid);
+
     return 0;
 }
