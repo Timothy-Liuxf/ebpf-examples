@@ -1,4 +1,4 @@
-PROG=test
+PROG=test uprobe py
 CC=clang
 ARCH=x86
 CFLAGS=-g -O2
